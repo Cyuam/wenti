@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文体部工作台</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <h1 class="logo">文体部工作台</h1>
+            <nav class="nav">
+                <a href="#download" class="nav-link">参考文件</a>
+                <a href="#planner" class="nav-link">策划案生成</a>
+                <a href="#prizes" class="nav-link">奖品库</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- 参考文件下载区 -->
+        <section id="download" class="section">
+            <h2 class="section-title">参考文件</h2>
+            <p class="section-desc">往届策划案、节目单、推文与简报，供新成员学习参考。点击即可下载。如需新增文件，把文件放到仓库 <code>downloads/</code> 目录并在 <code>files.js</code> 中登记。</p>
+            <div id="fileList" class="file-grid"></div>
+        </section>
+
+        <!-- 策划案生成 -->
+        <section id="planner" class="section">
+            <h2 class="section-title">策划案生成</h2>
+            <p class="section-desc">填写下方表单，奖品可在「奖品库」勾选后自动带入，最后点击「生成策划案」即可预览并下载。</p>
+
+            <form id="planForm" class="plan-form">
+                <div class="form-row">
+                    <label class="form-label">活动名称
+                        <input type="text" name="name" class="form-input" placeholder="例：2026春季篮球联赛" required>
+                    </label>
+                </div>
+
+                <div class="form-row two-col">
+                    <label class="form-label">活动时间
+                        <input type="text" name="time" class="form-input" placeholder="例：2026-03-15 14:00 ~ 18:00" required>
+                    </label>
+                    <label class="form-label">活动地点
+                        <input type="text" name="place" class="form-input" placeholder="例：学校体育馆" required>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label">活动目的
+                        <textarea name="purpose" class="form-input" rows="3" placeholder="例：丰富同学课余生活，增强体质，促进班级交流"></textarea>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label">活动流程
+                        <textarea name="flow" class="form-input" rows="5" placeholder="一行一个环节，例：&#10;14:00 开幕式&#10;14:30 小组赛&#10;17:00 决赛&#10;18:00 颁奖"></textarea>
+                    </label>
+                </div>
+
+                <div class="form-row two-col">
+                    <label class="form-label">预算总额（元）
+                        <input type="number" name="budget" class="form-input" placeholder="例：2000" min="0" step="0.01">
+                    </label>
+                    <label class="form-label">负责人
+                        <input type="text" name="owner" class="form-input" placeholder="例：张三">
+                    </label>
+                </div>
+
+                <!-- 奖品勾选区 -->
+                <div class="form-row">
+                    <div class="prize-block">
+                        <div class="prize-block-head">
+                            <h3 class="prize-block-title">奖品设置</h3>
+                            <button type="button" id="goPrizes" class="btn btn-ghost">前往奖品库勾选</button>
+                        </div>
+                        <div id="selectedPrizes" class="selected-prizes">
+                            <p class="empty-tip">尚未选择奖品，可在下方奖品库勾选，或手动添加。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label">注意事项
+                        <textarea name="notes" class="form-input" rows="3" placeholder="例：雨天顺延；参赛同学需自备运动鞋"></textarea>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="previewBtn" class="btn btn-primary">生成策划案</button>
+                    <button type="reset" class="btn btn-ghost">清空表单</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- 奖品库 -->
+        <section id="prizes" class="section">
+            <h2 class="section-title">奖品库</h2>
+            <p class="section-desc">按价位分类的常用奖品，勾选并填写数量后会自动带入策划案。也可在「自定义」区手动添加。</p>
+
+            <div class="prize-tabs">
+                <button class="prize-tab active" data-level="low">低价位（≤30元）</button>
+                <button class="prize-tab" data-level="mid">中价位（31~100元）</button>
+                <button class="prize-tab" data-level="high">高价位（&gt;100元）</button>
+                <button class="prize-tab" data-level="custom">自定义</button>
+            </div>
+
+            <div id="prizePanel" class="prize-panel"></div>
+
+            <div class="prize-summary">
+                <h3>已选奖品</h3>
+                <div id="prizeSummaryList" class="prize-summary-list"></div>
+                <div class="prize-summary-total">合计：<span id="prizeTotal">0.00</span> 元</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 策划案预览弹窗 -->
+    <div id="previewModal" class="modal">
+        <div class="modal-inner">
+            <div class="modal-head">
+                <h3>策划案预览</h3>
+                <div class="modal-actions">
+                    <button type="button" id="downloadHtml" class="btn btn-primary">下载 HTML</button>
+                    <button type="button" id="printPlan" class="btn btn-ghost">打印 / 另存 PDF</button>
+                    <button type="button" id="closeModal" class="btn btn-ghost">关闭</button>
+                </div>
+            </div>
+            <div id="previewBody" class="modal-body"></div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>文体部工作台 · 单页纯静态，可直接部署到 GitHub Pages</p>
+    </footer>
+
+    <script src="files.js"></script>
+    <script src="prizes.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
