@@ -116,5 +116,35 @@ window.DOWNLOAD_FILES = [
         file: '土风舞.zip',
         desc: '土风舞相关资料包',
         tag: '其他'
+    },
+    {
+        name: '单校标',
+        file: '单校标.jpg',
+        desc: '暨南大学校标',
+        tag: '其他'
+    },
+    {
+        name: '校标完整抠图',
+        file: '校标完整抠图.png',
+        desc: '暨南大学校标完整抠图',
+        tag: '其他'
+    },
+    {
+        name: '学生会会标',
+        file: '学生会会标.jpg',
+        desc: '学生会会标',
+        tag: '其他'
+    },
+    {
+        name: '学生会会标抠图',
+        file: '学生会会标抠图.png',
+        desc: '学生会会标抠图',
+        tag: '其他'
+    },
+    {
+        name: 'AAA最新院标抠图',
+        file: 'AAA最新院标抠图.png',
+        desc: '法学院/知识产权学院最新院标抠图',
+        tag: '其他'
     }
 ];
