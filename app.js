@@ -414,6 +414,32 @@
         var organizer = d.organizer || orgFull;
         var dept = host; // 负责部门默认同主办单位
 
+        // 封面底部信息：用内联样式 + <u> 标签做下划线，确保 Word 兼容
+        // padVal：把值用全角空格补到固定宽度，让下划线结尾对齐
+        function padVal(s) {
+            var target = 20; // 固定约20个中文字符宽
+            var len = 0;
+            for (var i = 0; i < s.length; i++) {
+                len += s.charCodeAt(i) > 127 ? 2 : 1; // 中文算2，英文算1
+            }
+            var need = target * 2 - len;
+            if (need <= 0) return s; // 超长不补
+            var pad = '';
+            for (var j = 0; j < Math.floor(need / 2); j++) pad += '\u3000'; // 全角空格
+            if (need % 2 === 1) pad += ' '; // 奇数补一个半角空格
+            return s + pad;
+        }
+        // 封面底部信息：只输出有内容的行
+        function infoLine(label, val) {
+            if (!val) return '';
+            return '<div class="cover-info-line">\u3000\u3000\u3000\u3000 ' + label + '<u>' + escapeHtml(padVal(val)) + '</u></div>';
+        }
+        var coverInfoHtml = infoLine('项目名称：', d.name || '')
+            + infoLine('主办单位：', host)
+            + infoLine('承办单位：', organizer)
+            + infoLine('负责部门：', dept);
+        var coverInfo = coverInfoHtml ? '<div class="cover-info">' + coverInfoHtml + '</div>' : '';
+
         // 封面页（独立一页：顶部学院+活动名，中部策划书竖排，底部信息）
         var coverPage = ''
             + '<div class="cover-page">'
@@ -424,33 +450,38 @@
             + '  <div class="cover-center">'
             + '    <div class="cover-title">策<br>划<br>书</div>'
             + '  </div>'
-            + '  <div class="cover-info">'
-            + '    <p>项目名称：<span class="info-val">' + escapeHtml(d.name || '') + '</span></p>'
-            + '    <p>主办单位：<span class="info-val">' + escapeHtml(host) + '</span></p>'
-            + '    <p>承办单位：<span class="info-val">' + escapeHtml(organizer) + '</span></p>'
-            + '    <p>负责部门：<span class="info-val">' + escapeHtml(dept) + '</span></p>'
-            + '  </div>'
+            + coverInfo
             + '</div>';
 
-        // 正文章节
-        var sectionsHtml = (d.sections || []).map(function (s) {
-            return '<h2>' + escapeHtml(s.title) + '</h2>' + textToParagraphs(s.content);
+        // 正文章节（跳过内容为空的章节，重新按顺序编号 一、二、三、…）
+        var cnNums = ['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五'];
+        var nonEmptySections = (d.sections || []).filter(function (s) {
+            return s.content && s.content.trim();
+        });
+        var sectionsHtml = nonEmptySections.map(function (s, i) {
+            // 去掉原标题开头的"一、""二、"等编号，用重新计算的序号
+            var title = (s.title || '').replace(/^[一二三四五六七八九十]+、\s*/, '');
+            var num = cnNums[i] || (i + 1);
+            return '<h2>' + num + '、' + escapeHtml(title) + '</h2>' + textToParagraphs(s.content);
         }).join('');
 
-        // 附件一：物资与经费预算（黑色实线边框）
-        var attachment1 = ''
-            + '<h2>附件一 物资与活动经费预算</h2>'
-            + '<table class="budget-table">'
-            + '  <tr><th>名称</th><th>单价/元</th><th>数量</th><th>总价/元</th></tr>'
-            + prizeRows
-            + (selectedPrizes.length ? '<tr><td colspan="3" style="text-align:right;font-weight:bold">合计</td><td style="font-weight:bold">' + prizeTotal.toFixed(2) + '</td></tr>' : '')
-            + (d.budget ? '<tr><td colspan="3" style="text-align:right;font-weight:bold">预算总额</td><td style="font-weight:bold">' + escapeHtml(d.budget) + '</td></tr>' : '')
-            + '</table>';
+        // 附件一：物资与经费预算（没选奖品且没填预算时不输出）
+        var attachment1 = '';
+        if (selectedPrizes.length || d.budget) {
+            attachment1 = ''
+                + '<h2>附件一 物资与活动经费预算</h2>'
+                + '<table class="budget-table">'
+                + '  <tr><th>名称</th><th>单价/元</th><th>数量</th><th>总价/元</th></tr>'
+                + prizeRows
+                + (selectedPrizes.length ? '<tr><td colspan="3" style="text-align:right;font-weight:bold">合计</td><td style="font-weight:bold">' + prizeTotal.toFixed(2) + '</td></tr>' : '')
+                + (d.budget ? '<tr><td colspan="3" style="text-align:right;font-weight:bold">预算总额</td><td style="font-weight:bold">' + escapeHtml(d.budget) + '</td></tr>' : '')
+                + '</table>';
+        }
 
-        // 附件二：人员安排
+        // 附件二：人员安排（没填时不输出）
         var attachment2 = d.staff
             ? '<h2>附件二 人员安排</h2>' + textToParagraphs(d.staff)
-            : '<h2>附件二 人员安排</h2><p>另附</p>';
+            : '';
 
         return ''
             + '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>'
@@ -463,9 +494,8 @@
             + '.cover-activity{font-family:"KaiTi_GB2312","楷体_GB2312","KaiTi","楷体",serif;font-size:26px;font-weight:bold;margin:0 0 60px;line-height:1.6}'
             + '.cover-center{margin:40px 0}'
             + '.cover-title{font-family:"STXinwei","华文新魏","FZXiWei-Medium","KaiTi","楷体",serif;font-size:48pt;font-weight:bold;line-height:1.4}'
-            + '.cover-info{margin-top:80px;text-align:left;font-size:14px;line-height:2}'
-            + '.cover-info p{margin:0;text-indent:0}'
-            + '.info-val{display:inline-block;border-bottom:1px solid #000;width:300px;padding:0 4px}'
+            + '.cover-info{margin-top:60px;text-align:left;font-size:14px}'
+            + '.cover-info-line{margin:0;padding:0;line-height:1.0;text-indent:0;text-align:left}'
             // 正文样式
             + 'h2{font-size:16px;font-weight:bold;margin:24px 0 8px}'
             + 'p{margin:6px 0;text-indent:2em}'
@@ -479,10 +509,11 @@
             + '</style></head><body>'
             + coverPage
             + sectionsHtml
-            + '<div class="sign">'
-            + '  <p>' + escapeHtml(orgFull) + '</p>'
-            + '  <p>' + escapeHtml(d.date || '') + '</p>'
-            + '</div>'
+            + (orgFull || d.date ? ''
+                + '<div class="sign">'
+                + (orgFull ? '  <p>' + escapeHtml(orgFull) + '</p>' : '')
+                + (d.date ? '  <p>' + escapeHtml(d.date) + '</p>' : '')
+                + '</div>' : '')
             + attachment1
             + attachment2
             + '</body></html>';
