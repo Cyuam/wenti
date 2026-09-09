@@ -14,6 +14,7 @@
                 <a href="#download" class="nav-link">参考文件</a>
                 <a href="#planner" class="nav-link">策划案生成</a>
                 <a href="#prizes" class="nav-link">奖品库</a>
+                <a href="#inventory" class="nav-link">已有物资</a>
             </nav>
         </div>
     </header>
@@ -62,6 +63,15 @@
                 <div class="form-row">
                     <label class="form-label">活动名称（含主题）
                         <input type="text" name="name" class="form-input" placeholder="例：“暨然来到，熠熠发光”2024级本科新生迎新活动" required>
+                    </label>
+                </div>
+
+                <div class="form-row two-col">
+                    <label class="form-label">主办单位
+                        <input type="text" name="host" class="form-input" placeholder="例：法学院/知识产权学院学生会文体部" value="法学院/知识产权学院学生会文体部">
+                    </label>
+                    <label class="form-label">承办单位
+                        <input type="text" name="organizer" class="form-input" placeholder="例：法学院/知识产权学院学生会" value="法学院/知识产权学院学生会">
                     </label>
                 </div>
 
@@ -130,7 +140,20 @@
                 <h3>已选奖品</h3>
                 <div id="prizeSummaryList" class="prize-summary-list"></div>
                 <div class="prize-summary-total">合计：<span id="prizeTotal">0.00</span> 元</div>
+                <div class="prize-summary-actions">
+                    <button type="button" id="exportPrizesExcel" class="btn btn-primary">导出已选奖品为 Excel</button>
+                </div>
             </div>
+        </section>
+
+        <!-- 已有物资 -->
+        <section id="inventory" class="section">
+            <h2 class="section-title">已有物资</h2>
+            <p class="section-desc">文体部现有库存物资，可在策划活动时查阅剩余情况。支持按名称搜索。</p>
+            <div class="file-search-wrap">
+                <input type="text" id="inventorySearch" class="file-search" placeholder="搜索物资名称…">
+            </div>
+            <div id="inventoryList" class="inventory-grid"></div>
         </section>
     </main>
 
@@ -156,6 +179,7 @@
 
     <script src="files.js"></script>
     <script src="prizes.js"></script>
+    <script src="inventory.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

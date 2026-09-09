@@ -109,6 +109,41 @@
         }).join('');
     }
 
+    // ====== 已有物资 ======
+    var inventorySearchKey = '';
+
+    function renderInventory() {
+        var list = document.getElementById('inventoryList');
+        if (!list) return;
+        var data = window.INVENTORY || [];
+        if (!data.length) {
+            list.innerHTML = '<p class="empty-tip">暂无物资数据。请在 inventory.js 中登记。</p>';
+            return;
+        }
+        var kw = inventorySearchKey.trim().toLowerCase();
+        var filtered = data;
+        if (kw) {
+            filtered = data.filter(function (it) {
+                return (it.name || '').toLowerCase().indexOf(kw) !== -1;
+            });
+        }
+        if (!filtered.length) {
+            list.innerHTML = '<p class="empty-tip">没有匹配「' + escapeHtml(inventorySearchKey.trim()) + '」的物资</p>';
+            return;
+        }
+        list.innerHTML = filtered.map(function (it) {
+            var note = it.note ? '<span class="inv-note">' + escapeHtml(it.note) + '</span>' : '';
+            return ''
+                + '<div class="inv-card">'
+                + '  <div class="inv-card-head">'
+                + '    <span class="inv-name">' + escapeHtml(it.name) + '</span>'
+                + '    ' + note
+                + '  </div>'
+                + '  <div class="inv-qty">' + it.qty + '<span class="inv-unit">' + escapeHtml(it.unit || '个') + '</span></div>'
+                + '</div>';
+        }).join('');
+    }
+
     // ====== 奖品库 ======
     var selectedPrizes = []; // { name, price, qty, level }
     var currentLevel = 'low';
@@ -336,6 +371,8 @@
             org: form.org.value.trim(),
             orgFull: form.orgFull.value.trim(),
             name: form.name.value.trim(),
+            host: form.host.value.trim(),
+            organizer: form.organizer.value.trim(),
             time: form.time.value.trim(),
             place: form.place.value.trim(),
             date: form.date.value.trim(),
@@ -373,13 +410,26 @@
 
         var org = d.org || '法学院/知识产权学院';
         var orgFull = d.orgFull || (org + '团委、学生会');
+        var host = d.host || orgFull;
+        var organizer = d.organizer || orgFull;
+        var dept = host; // 负责部门默认同主办单位
 
-        // 页头
-        var header = ''
-            + '<div class="cover">'
-            + '  <p class="cover-org">' + escapeHtml(org) + '</p>'
-            + '  <p class="cover-activity">' + escapeHtml(d.name || '') + '</p>'
-            + '  <h1 class="cover-title">策 划 书</h1>'
+        // 封面页（独立一页：顶部学院+活动名，中部策划书竖排，底部信息）
+        var coverPage = ''
+            + '<div class="cover-page">'
+            + '  <div class="cover-top">'
+            + '    <p class="cover-org">暨南大学' + escapeHtml(org) + '</p>'
+            + '    <p class="cover-activity">' + escapeHtml(d.name || '') + '</p>'
+            + '  </div>'
+            + '  <div class="cover-center">'
+            + '    <div class="cover-title">策<br>划<br>书</div>'
+            + '  </div>'
+            + '  <div class="cover-info">'
+            + '    <p>项目名称：<span class="info-val">' + escapeHtml(d.name || '') + '</span></p>'
+            + '    <p>主办单位：<span class="info-val">' + escapeHtml(host) + '</span></p>'
+            + '    <p>承办单位：<span class="info-val">' + escapeHtml(organizer) + '</span></p>'
+            + '    <p>负责部门：<span class="info-val">' + escapeHtml(dept) + '</span></p>'
+            + '  </div>'
             + '</div>';
 
         // 正文章节
@@ -387,7 +437,7 @@
             return '<h2>' + escapeHtml(s.title) + '</h2>' + textToParagraphs(s.content);
         }).join('');
 
-        // 附件一：物资与经费预算
+        // 附件一：物资与经费预算（黑色实线边框）
         var attachment1 = ''
             + '<h2>附件一 物资与活动经费预算</h2>'
             + '<table class="budget-table">'
@@ -406,21 +456,28 @@
             + '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>'
             + escapeHtml(d.name || '策划书') + '</title><style>'
             + 'body{font-family:"SimSun","宋体","Microsoft YaHei",serif;max-width:800px;margin:40px auto;padding:0 24px;color:#000;line-height:1.8;font-size:14px}'
-            + '.cover{text-align:center;margin:40px 0 50px}'
-            + '.cover-org{font-size:16px;margin:0 0 8px}'
-            + '.cover-activity{font-size:18px;margin:0 0 24px;font-weight:bold}'
-            + '.cover-title{font-size:32px;letter-spacing:8px;margin:0;padding:0;border:none}'
+            // 封面页样式
+            + '.cover-page{position:relative;min-height:90vh;text-align:center;padding:60px 40px;margin-bottom:20px;page-break-after:always}'
+            + '.cover-top{margin-top:40px}'
+            + '.cover-org{font-family:"SimSun","宋体",serif;font-size:18px;margin:0 0 16px}'
+            + '.cover-activity{font-family:"KaiTi_GB2312","楷体_GB2312","KaiTi","楷体",serif;font-size:26px;font-weight:bold;margin:0 0 60px;line-height:1.6}'
+            + '.cover-center{margin:40px 0}'
+            + '.cover-title{font-family:"STXinwei","华文新魏","FZXiWei-Medium","KaiTi","楷体",serif;font-size:48pt;font-weight:bold;line-height:1.4}'
+            + '.cover-info{margin-top:80px;text-align:left;font-size:14px;line-height:2}'
+            + '.cover-info p{margin:0;text-indent:0}'
+            + '.info-val{display:inline-block;border-bottom:1px solid #000;width:300px;padding:0 4px}'
+            // 正文样式
             + 'h2{font-size:16px;font-weight:bold;margin:24px 0 8px}'
             + 'p{margin:6px 0;text-indent:2em}'
             + 'table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}'
             + 'th,td{border:1px solid #000;padding:6px 8px;text-align:left}'
             + 'th{background:#f0f0f0;font-weight:bold}'
-            + '.budget-table th,.budget-table td{text-align:center}'
+            + '.budget-table th,.budget-table td{text-align:center;border:1px solid #000}'
             + '.sign{text-align:right;margin-top:40px;line-height:2}'
             + '.sign p{text-indent:0}'
-            + '@media print{body{margin:0;padding:0}}'
+            + '@media print{body{margin:0;padding:0;max-width:none}table,th,td{page-break-inside:avoid}h2{page-break-after:avoid}.budget-table{page-break-inside:auto}.cover-page{page-break-after:always}}'
             + '</style></head><body>'
-            + header
+            + coverPage
             + sectionsHtml
             + '<div class="sign">'
             + '  <p>' + escapeHtml(orgFull) + '</p>'
@@ -434,15 +491,28 @@
     // 生成 Word (.doc) 格式 —— HTML 内容包在 Word XML 命名空间里，Word 可直接打开
     function buildPlanDoc(d) {
         var html = buildPlanHTML(d);
+        // 用字符串查找代替正则，稳健地提取 <body>...</body> 内部内容
+        var bodyOpen = html.indexOf('<body>');
+        var bodyClose = html.lastIndexOf('</body>');
+        var inner = (bodyOpen !== -1 && bodyClose !== -1 && bodyClose > bodyOpen)
+            ? html.substring(bodyOpen + '<body>'.length, bodyClose)
+            : html; // 兜底：若找不到 body 标签，直接用原文
+        // 提取原 HTML 中的 <style> 内容，确保封面字体和表格边框在 Word 中生效
+        var styleContent = '';
+        var styleOpen = html.indexOf('<style>');
+        var styleClose = html.indexOf('</style>');
+        if (styleOpen !== -1 && styleClose !== -1 && styleClose > styleOpen) {
+            styleContent = html.substring(styleOpen + '<style>'.length, styleClose);
+        }
         return ''
             + '<html xmlns:o="urn:schemas-microsoft-com:office:office" '
             + 'xmlns:w="urn:schemas-microsoft-com:office:word" '
             + 'xmlns="http://www.w3.org/TR/REC-html40">'
             + '<head><meta charset="UTF-8">'
             + '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->'
-            + '<style>@page{size:A4;margin:2.54cm 3.18cm 2.54cm 3.18cm} body{font-family:"SimSun","宋体",serif}</style>'
+            + '<style>@page{size:A4;margin:2.54cm 3.18cm 2.54cm 3.18cm} body{font-family:"SimSun","宋体",serif} ' + styleContent + '</style>'
             + '</head><body>'
-            + html.replace(/^<!DOCTYPE html>[^]*?<body>/, '').replace(/<\/body>.*$/, '')
+            + inner
             + '</body></html>';
     }
 
@@ -486,18 +556,26 @@
     }
 
     function downloadDoc() {
-        var d = window.__lastPlanData || getFormData();
-        var docContent = buildPlanDoc(d);
-        // 加 BOM 让 Word 正确识别 UTF-8
-        var blob = new Blob(['\ufeff' + docContent], { type: 'application/msword;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = (d.name || '策划书') + '.doc';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        try {
+            var d = window.__lastPlanData || getFormData();
+            if (!d.name) { alert('请先填写活动名称'); return; }
+            var docContent = buildPlanDoc(d);
+            // 加 BOM 让 Word 正确识别 UTF-8
+            var blob = new Blob(['\ufeff' + docContent], { type: 'application/msword;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = (d.name || '策划书') + '.doc';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        } catch (err) {
+            console.error('下载 Word 失败:', err);
+            alert('下载 Word 失败：' + (err && err.message ? err.message : '未知错误') + '\n可尝试使用「下载 HTML」或「打印 / 另存 PDF」。');
+        }
     }
 
     function printPlan() {
@@ -507,7 +585,88 @@
         w.document.write(window.__lastPlanHTML);
         w.document.close();
         w.focus();
-        w.print();
+        // 等页面渲染完成后再触发打印，避免表格等内容未渲染就被打印导致内容缺失
+        if (w.matchMedia) {
+            var timer = w.setTimeout(function () { w.print(); }, 300);
+            w.addEventListener('afterprint', function () { w.clearTimeout(timer); w.close(); });
+        } else {
+            w.onload = function () { w.print(); };
+        }
+    }
+
+    // 导出已选奖品为 Excel（SpreadsheetML 2003 XML 格式，Excel/WPS 可直接打开）
+    function exportPrizesExcel() {
+        if (!selectedPrizes.length) {
+            alert('尚未选择奖品，请先在奖品库中勾选奖品。');
+            return;
+        }
+        // XML 转义
+        function xmlEsc(s) {
+            return String(s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c];
+            });
+        }
+        var total = selectedPrizes.reduce(function (s, p) { return s + p.price * p.qty; }, 0);
+        var rows = selectedPrizes.map(function (p, i) {
+            return ''
+                + '<Row>'
+                + '<Cell><Data ss:Type="Number">' + (i + 1) + '</Data></Cell>'
+                + '<Cell><Data ss:Type="String">' + xmlEsc(p.name) + '</Data></Cell>'
+                + '<Cell><Data ss:Type="Number">' + p.price.toFixed(2) + '</Data></Cell>'
+                + '<Cell><Data ss:Type="Number">' + p.qty + '</Data></Cell>'
+                + '<Cell><Data ss:Type="Number">' + (p.price * p.qty).toFixed(2) + '</Data></Cell>'
+                + '<Cell><Data ss:Type="String">' + xmlEsc(p.level || '') + '</Data></Cell>'
+                + '</Row>';
+        }).join('');
+        var xml = ''
+            + '<?xml version="1.0" encoding="UTF-8"?>\n'
+            + '<?mso-application progid="Excel.Sheet"?>\n'
+            + '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" '
+            + 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" '
+            + 'xmlns:o="urn:schemas-microsoft-com:office:office">'
+            + '<Styles>'
+            + '<Style ss:ID="head"><Font ss:Bold="1"/><Interior ss:Color="#D9E1F2" ss:Pattern="Solid"/></Style>'
+            + '<Style ss:ID="total"><Font ss:Bold="1"/></Style>'
+            + '</Styles>'
+            + '<Worksheet ss:Name="奖品清单">'
+            + '<Table>'
+            + '<Column ss:Width="50"/><Column ss:Width="200"/><Column ss:Width="80"/><Column ss:Width="60"/><Column ss:Width="90"/><Column ss:Width="80"/>'
+            + '<Row ss:StyleID="head">'
+            + '<Cell><Data ss:Type="String">序号</Data></Cell>'
+            + '<Cell><Data ss:Type="String">名称</Data></Cell>'
+            + '<Cell><Data ss:Type="String">单价(元)</Data></Cell>'
+            + '<Cell><Data ss:Type="String">数量</Data></Cell>'
+            + '<Cell><Data ss:Type="String">总价(元)</Data></Cell>'
+            + '<Cell><Data ss:Type="String">价位</Data></Cell>'
+            + '</Row>'
+            + rows
+            + '<Row ss:StyleID="total">'
+            + '<Cell><Data ss:Type="String">合计</Data></Cell>'
+            + '<Cell><Data ss:Type="String"></Data></Cell>'
+            + '<Cell><Data ss:Type="String"></Data></Cell>'
+            + '<Cell><Data ss:Type="String"></Data></Cell>'
+            + '<Cell><Data ss:Type="Number">' + total.toFixed(2) + '</Data></Cell>'
+            + '<Cell><Data ss:Type="String"></Data></Cell>'
+            + '</Row>'
+            + '</Table>'
+            + '</Worksheet>'
+            + '</Workbook>';
+        try {
+            var blob = new Blob(['\ufeff' + xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '奖品清单.xls';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        } catch (err) {
+            console.error('导出奖品 Excel 失败:', err);
+            alert('导出失败：' + (err && err.message ? err.message : '未知错误'));
+        }
     }
 
     // ====== 工具 ======
@@ -528,6 +687,7 @@
         renderPrizePanel();
         bindPrizeTabs();
         refreshPrizeUI();
+        renderInventory();
 
         // 模板切换
         document.getElementById('templateSelect').addEventListener('click', function (e) {
@@ -548,6 +708,15 @@
             });
         }
 
+        // 已有物资搜索框
+        var invSearch = document.getElementById('inventorySearch');
+        if (invSearch) {
+            invSearch.addEventListener('input', function () {
+                inventorySearchKey = invSearch.value;
+                renderInventory();
+            });
+        }
+
         document.getElementById('previewBtn').addEventListener('click', openPreview);
         document.getElementById('closeModal').addEventListener('click', closePreview);
         document.getElementById('downloadHtml').addEventListener('click', downloadPlan);
@@ -556,6 +725,10 @@
         document.getElementById('goPrizes').addEventListener('click', function () {
             document.getElementById('prizes').scrollIntoView({ behavior: 'smooth' });
         });
+
+        // 导出已选奖品为 Excel
+        var exportBtn = document.getElementById('exportPrizesExcel');
+        if (exportBtn) exportBtn.addEventListener('click', exportPrizesExcel);
 
         // 点击遮罩关闭
         document.getElementById('previewModal').addEventListener('click', function (e) {
