@@ -118,6 +118,12 @@ window.DOWNLOAD_FILES = [
         tag: '其他'
     },
     {
+        name: '迎新联欢会',
+        file: '迎新联欢会.zip',
+        desc: '迎新联欢会相关资料包',
+        tag: '其他'
+    },
+    {
         name: '单校标',
         file: '单校标.jpg',
         desc: '暨南大学校标',
