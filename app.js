@@ -345,27 +345,53 @@
     };
 
     var currentTemplate = 'welcome';
+    var extraSections = [];
 
     function renderSections() {
         var container = document.getElementById('sectionsContainer');
         if (!container) return;
-        var sections = TEMPLATES[currentTemplate] || [];
-        container.innerHTML = sections.map(function (s, i) {
-            var label = currentTemplate === 'custom'
-                ? '<input type="text" class="section-title-input" data-key="' + s.key + '" placeholder="章节标题（如：一、活动背景）" value="' + escapeAttr(s.title) + '">'
+        var sections = (TEMPLATES[currentTemplate] || []).concat(extraSections);
+        container.innerHTML = sections.map(function (s) {
+            var editable = s.editable || currentTemplate === 'custom';
+            var label = editable
+                ? '<input type="text" class="section-title-input" data-key="' + s.key + '" placeholder="章节标题（如：活动总结）" value="' + escapeAttr(s.title) + '">'
                 : escapeHtml(s.title);
+            var removeBtn = s.removable
+                ? '<button type="button" class="section-remove-btn" data-key="' + s.key + '" title="删除本章" aria-label="删除本章">×</button>'
+                : '';
             return ''
                 + '<div class="form-row section-row">'
                 + '  <label class="form-label">' + label
                 + '    <textarea name="sec_' + s.key + '" class="form-input" rows="' + s.rows + '" placeholder="' + escapeAttr(s.placeholder || '') + '"></textarea>'
                 + '  </label>'
+                + removeBtn
                 + '</div>';
         }).join('');
     }
 
+    function addSection() {
+        var key = 'ex_' + Date.now();
+        extraSections.push({
+            title: '',
+            key: key,
+            rows: 4,
+            placeholder: '输入本章内容（空行分段，段内换行也可）',
+            editable: true,
+            removable: true
+        });
+        renderSections();
+        var ta = document.querySelector('textarea[name="sec_' + key + '"]');
+        if (ta) ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function removeSection(key) {
+        extraSections = extraSections.filter(function (s) { return s.key !== key; });
+        renderSections();
+    }
+
     function getFormData() {
         var form = document.getElementById('planForm');
-        var sections = TEMPLATES[currentTemplate] || [];
+        var sections = (TEMPLATES[currentTemplate] || []).concat(extraSections);
         var data = {
             template: currentTemplate,
             org: form.org.value.trim(),
@@ -382,8 +408,8 @@
         };
         sections.forEach(function (s) {
             var title = s.title;
-            if (currentTemplate === 'custom') {
-                var titleInput = container = document.querySelector('.section-title-input[data-key="' + s.key + '"]');
+            if (s.editable || currentTemplate === 'custom') {
+                var titleInput = document.querySelector('.section-title-input[data-key="' + s.key + '"]');
                 if (titleInput && titleInput.value.trim()) title = titleInput.value.trim();
             }
             var content = (form['sec_' + s.key] ? form['sec_' + s.key].value : '').trim();
@@ -727,6 +753,7 @@
             document.querySelectorAll('.template-btn').forEach(function (b) { b.classList.remove('active'); });
             btn.classList.add('active');
             currentTemplate = btn.getAttribute('data-template');
+            extraSections = [];
             renderSections();
         });
 
@@ -747,6 +774,15 @@
                 renderInventory();
             });
         }
+
+        var addSecBtn = document.getElementById('addSectionBtn');
+        if (addSecBtn) addSecBtn.addEventListener('click', addSection);
+        var secContainer = document.getElementById('sectionsContainer');
+        if (secContainer) secContainer.addEventListener('click', function (e) {
+            var rmBtn = e.target.closest('.section-remove-btn');
+            if (!rmBtn) return;
+            removeSection(rmBtn.getAttribute('data-key'));
+        });
 
         document.getElementById('previewBtn').addEventListener('click', openPreview);
         document.getElementById('closeModal').addEventListener('click', closePreview);
